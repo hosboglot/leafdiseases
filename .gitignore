@@ -1,5 +1,10 @@
 # dataset directory
 data
+images
+augmented_images
+transformed_images
+processed_images
+checkpoints
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -133,6 +138,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.conda
 env/
 venv/
 ENV/

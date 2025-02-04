@@ -1,8 +1,12 @@
 import os
-import cv2
+import argparse
+from pathlib import Path
+from tqdm import tqdm
+
 import numpy as np
-from plantcv import plantcv as pcv
+import cv2
 import matplotlib.pyplot as plt
+from plantcv import plantcv as pcv
 
 def save_plant(image, output_path, image_name):
     file_path = os.path.join(output_path, image_name)
@@ -50,8 +54,8 @@ def process_skeletonize(guassian_binary_image, image_name, output_path):
 
 def process_image(image_path, output_path):
     image_name = os.path.splitext(os.path.basename(image_path))[0]
-    
-    image_output_path = os.path.join(output_path, image_name)
+
+    image_output_path = os.path.join(output_path)
     os.makedirs(image_output_path, exist_ok=True)
 
     image, _, _ = pcv.readimage(image_path, mode="native")
@@ -68,7 +72,7 @@ def process_image(image_path, output_path):
 
     return [original_path, guassian_path, damaged_mask_path, roi_object_path, pseudolandmarks_path, skeleton_path]
 
-def apply_transformations(input_path, output_path='images'):
+def apply_transformations(input_path, output_path='transformed_images'):
     images = []
     if os.path.isfile(input_path):
         os.makedirs(output_path, exist_ok=True)
@@ -76,7 +80,7 @@ def apply_transformations(input_path, output_path='images'):
         return images
     elif os.path.isdir(input_path):
         os.makedirs(output_path, exist_ok=True)
-        for file_name in os.listdir(input_path):
+        for file_name in tqdm(os.listdir(input_path)):
             file_path = os.path.join(input_path, file_name)
             if os.path.isfile(file_path):
                 images.append(process_image(file_path, output_path))
@@ -145,7 +149,7 @@ def plot_images(images):
 
 def plot_analyze_histogram(image, ax):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    
+
     channels = {
         "red": (image[:, :, 0], "red"),
         "green": (image[:, :, 1], "green"),
@@ -154,7 +158,7 @@ def plot_analyze_histogram(image, ax):
         "saturation": (cv2.cvtColor(image, cv2.COLOR_RGB2HSV)[:, :, 1], "cyan"),
         "value": (cv2.cvtColor(image, cv2.COLOR_RGB2HSV)[:, :, 2], "orange"),
     }
-    
+
     ax.clear()
     for label, (channel, color) in channels.items():
         hist, bins = np.histogram(channel, bins=256, range=(0, 256), density=True)
@@ -164,10 +168,17 @@ def plot_analyze_histogram(image, ax):
     ax.set_xlabel("Pixel intensity")
     ax.set_ylabel("Proportion of pixels (%)")
 
-# путь к файлу изображения или к папке с изображениями
-input_path = "input_path" 
-# путь к папке в котором будут храниться результаты
-output_path = "output_path"
 
-processed_images = apply_transformations(input_path, output_path)
-plot_images(processed_images)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Transformation')
+    parser.add_argument('source', type=Path, help='path to source image or plants dataset')
+    parser.add_argument('dest', type=Path, nargs='?', help='path to store transformed images')
+    args = parser.parse_args()
+
+    if args.source.is_file():
+        plot_images(process_image(args.source, args.dest))
+    elif args.source.is_dir():
+        if args.dest is not None:
+            apply_transformations(args.source, args.dest)
+        else:
+            raise argparse.ArgumentError(message='No destination path')

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
+from tqdm import tqdm
+
 
 def original(image: cv2.Mat):
     return image
@@ -43,7 +45,7 @@ def scale(image: cv2.Mat, factor: float | None = None):
 
 def illuminate(image: cv2.Mat, factor: float | None = None):
     if factor is None:
-        factor = np.random.uniform(10, 100)
+        factor = np.random.uniform(10, 50)
     return cv2.convertScaleAbs(image, beta=factor)
 
 def distort(image: cv2.Mat, factor: float | None = None):
@@ -52,10 +54,8 @@ def distort(image: cv2.Mat, factor: float | None = None):
     return (image + np.round(np.random.normal(0, factor, image.shape))).astype(np.uint8)
 
 
-def augment_dataset(input_path: Path, output_path: Path, target_count: int | None = None):
-    input_path = Path(input_path)
-    output_path = Path(output_path)
-
+def augment_dataset(input_path: Path, output_path: Path, target_count: int | None = None, random_seed=7):
+    np.random.seed(random_seed)
     image_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"}
     methods = [rotate, blur, contrast, scale, illuminate, distort]
 
@@ -63,14 +63,14 @@ def augment_dataset(input_path: Path, output_path: Path, target_count: int | Non
         target_count = max([len(list(category_path.glob('*'))) for category_path in input_path.iterdir()])
 
     for category_path in input_path.iterdir():
-        current_out_path = output_path / os.path.join(*category_path.parts[1:])
+        current_out_path = output_path / os.path.join(*category_path.parts[-1:])
         os.makedirs(current_out_path, exist_ok=True)
 
         image_names = [f.name for f in category_path.iterdir() if f.suffix.lower() in image_extensions]
 
         # augment images
         if len(image_names) < target_count:
-            for _ in range(target_count - len(image_names)):
+            for _ in tqdm(range(target_count - len(image_names))):
                 image_name = Path(np.random.choice(image_names))
                 method = np.random.choice(methods)
                 augmented_image_path = current_out_path / (image_name.with_stem(image_name.stem + '_' + method.__name__))
@@ -92,7 +92,7 @@ def augment_dataset(input_path: Path, output_path: Path, target_count: int | Non
             )
 
 
-def main(image_path: Path):
+def augment_image(image_path: Path, dest_path: Path | None = None):
     image = cv2.imread(image_path.as_posix())
     methods = [original, rotate, blur, contrast, scale, illuminate, distort]
     
@@ -107,7 +107,14 @@ def main(image_path: Path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Augmentation')
-    parser.add_argument('image', type=Path, help='source image')
+    parser.add_argument('source', type=Path, help='path to source image or plants dataset')
+    parser.add_argument('dest', type=Path, nargs='?', help='path to store augmented images')
     args = parser.parse_args()
 
-    main(args.image)
+    if args.source.is_file():
+        augment_image(args.source, args.dest)
+    elif args.source.is_dir():
+        if args.dest is not None:
+            augment_dataset(args.source, args.dest)
+        else:
+            raise argparse.ArgumentError(message='No destination path')
