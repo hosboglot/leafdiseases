@@ -79,11 +79,12 @@ def apply_transformations(input_path, output_path='transformed_images'):
         images.append(process_image(input_path, output_path))
         return images
     elif os.path.isdir(input_path):
-        os.makedirs(output_path, exist_ok=True)
         for file_name in tqdm(os.listdir(input_path)):
             file_path = os.path.join(input_path, file_name)
+            output_file_path = os.path.join(output_path, os.path.splitext(os.path.basename(file_name))[0])
+            os.makedirs(output_file_path, exist_ok=True)
             if os.path.isfile(file_path):
-                images.append(process_image(file_path, output_path))
+                images.append(process_image(file_path, output_file_path))
         return images
     else:
         print(f"Указанный путь {input_path} не является файлом или директорией.")

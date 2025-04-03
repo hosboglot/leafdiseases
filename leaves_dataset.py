@@ -18,9 +18,18 @@ class LeavesDataset(Dataset):
         self.diseases = sorted(os.listdir(datapath))
         self.images = {}
         for i, disease in enumerate(self.diseases):
-            files = np.array(os.listdir(os.path.join(datapath, disease)))
-            files.sort()
-            files = files.reshape(-1, 6)
+            disease_path = os.path.join(datapath, disease)
+            files = os.listdir(disease_path)
+            files = [
+                sorted([
+                    os.path.join(im, tr)
+                    for tr in os.listdir(os.path.join(disease_path, im))
+                ]) for im in files
+            ]
+            files = np.array(files).reshape(-1, 6)
+            # print(files)
+            # files = np.array(os.listdir(os.path.join(datapath, disease)))
+            # files = files.reshape(-1, 6)
             idxs = np.random.random_integers(0, len(files) - 1, int(len(files) * split_ratio))
             files = files[idxs]
             self.images[i] = files

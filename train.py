@@ -80,12 +80,11 @@ def train_model(data_path, ckpt_path, num_classes = 4, batch_size = 16, num_epoc
 
     torch.save(model.state_dict(), ckpt_path)
     
-    plt.plot(loss_list, color=[1, 0, 0], label='Loss')
-    plt.legend()
-    plt.figure()
-    plt.plot(acc_list, color=[0, 0, 1], label='Accuracy')
-    plt.legend()
-    plt.show()
+    fig, axs = plt.subplots(1, 2)
+    axs[0].plot(loss_list, color=[1, 0, 0], label='Loss')
+    axs[1].plot(acc_list, color=[0, 0, 1], label='Accuracy')
+    fig.legend()
+    fig.savefig(Path(ckpt_path).stem + '_plots.png')
 
 def File(f):
     path = Path(f)
@@ -94,12 +93,11 @@ def File(f):
     return path
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train')
-    parser.add_argument('source', type=Path, help='path to plants dataset')
-    parser.add_argument('ckpt', type=File, help='path to checkpoint')
-    args = parser.parse_args()
+    train_model('processed_images/Grape', 'checkpoints/Grape.ckpt')
+    # train_model('processed_images/Apple', 'checkpoints/Apple.ckpt')
+    # parser = argparse.ArgumentParser(description='Train')
+    # parser.add_argument('source', type=Path, help='path to plants dataset')
+    # parser.add_argument('ckpt', type=File, help='path to checkpoint')
+    # args = parser.parse_args()
 
-    train_model(args.source, args.ckpt)
-
-    # test_model('Apple', data_path + 'Apple', ckpt_path)
-    # test_model('Grape', data_path + 'Grape', ckpt_path)
+    # train_model(args.source, args.ckpt)
